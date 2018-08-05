@@ -1,0 +1,73 @@
+group 'me.modmuss50'
+
+version '0.0.1'
+
+def ENV = System.getenv()
+if (ENV.BUILD_NUMBER) {
+	version = version + "." + "${System.getenv().BUILD_NUMBER}"
+}
+
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven {
+        name = 'mojang'
+        url = 'https://libraries.minecraft.net/'
+    }
+    maven {
+        name = 'Fabric'
+        url = 'http://maven.fabricmc.net/'
+    }
+    maven {
+        name = 'Modmuss'
+        url = 'http://maven.modmuss50.me/'
+    }
+	maven {
+		name = 'Forge' //For ModLauncher
+		url = 'http://files.minecraftforge.net/maven/'
+	}
+}
+
+dependencies {
+	compile 'cpw.mods:modlauncher:0.1.0-rc.3'
+    compile 'org.apache.commons:commons-lang3:3.7'
+    compile 'org.javassist:javassist:3.23.1-GA'
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			groupId 'Fusion'
+			artifactId project.archivesBaseName
+			version project.version
+
+			from components.java
+		}
+	}
+	repositories {
+		maven {
+			url "http://mavenupload.modmuss50.me/"
+			if (project.hasProperty('mavenPass')) {
+				credentials {
+					username 'buildslave'
+					password project.getProperty('mavenPass')
+				}
+			}
+		}
+	}
+}

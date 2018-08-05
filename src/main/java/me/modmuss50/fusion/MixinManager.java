@@ -1,0 +1,51 @@
+package me.modmuss50.fusion;
+
+import cpw.mods.modlauncher.api.ITransformer;
+import me.modmuss50.fusion.api.Mixin;
+import org.apache.commons.lang3.Validate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+public class MixinManager {
+
+	public static List<String> mixinClassList = new ArrayList<>();
+	public static HashMap<String, List<String>> mixinTargetMap = new HashMap<>();
+
+	public static List<String> transformedClasses = new ArrayList<>();
+	public static Logger logger = LogManager.getFormatterLogger("FusionMixin");
+
+	public static void registerMixin(String mixinClass) {
+		try {
+			Class cla = Class.forName(mixinClass);
+			Mixin mixin = (Mixin) cla.getAnnotation(Mixin.class);
+			Validate.notNull(mixin);
+			String target = mixin.value().getName();
+			Validate.notNull(target);
+			Validate.isTrue(!target.isEmpty());
+			registerMixin(mixinClass, target);
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("Failed to find mixinclass", e);
+		}
+	}
+
+	public static void registerMixin(String mixinClass, String targetClass) {
+		mixinClassList.add(mixinClass);
+		if (mixinTargetMap.containsKey(targetClass)) {
+			mixinTargetMap.get(targetClass).add(mixinClass);
+		} else {
+			List<String> list = new ArrayList<>();
+			list.add(mixinClass);
+			mixinTargetMap.put(targetClass, list);
+		}
+	}
+
+	public static Set<ITransformer.Target> getAllTargets(){
+		return mixinTargetMap.keySet().stream().map(ITransformer.Target::targetClass).collect(Collectors.toSet());
+	}
+}
