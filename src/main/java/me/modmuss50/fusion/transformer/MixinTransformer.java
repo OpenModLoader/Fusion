@@ -12,13 +12,11 @@ import org.apache.commons.lang3.Validate;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 
 /**
  * This is where most of it happens.
@@ -38,7 +36,8 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 
 			long start = System.currentTimeMillis();
 			//makes a CtClass out of the byte array
-			cp.insertClassPath(new ByteArrayClassPath(name, basicClass));
+			ClassPath tempCP = new ByteArrayClassPath(name, basicClass);
+			cp.insertClassPath(tempCP);
 			CtClass target = null;
 			try {
 				target = cp.get(name);
@@ -173,6 +172,8 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 				}
 				MixinManager.logger.info("Successfully applied " + mixinClassName + " to " + name);
 			}
+			//Removes the target class from the temp classpath
+			cp.removeClassPath(tempCP);
 			try {
 				MixinManager.logger.info("Successfully applied " + mixins.size() + " mixins to " + name + " in " + (System.currentTimeMillis() - start) + "ms");
 				MixinManager.transformedClasses.add(name);
