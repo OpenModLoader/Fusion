@@ -52,11 +52,15 @@ artifacts {
 publishing {
 	publications {
 		maven(MavenPublication) {
-			groupId 'Fusion'
+			groupId project.group
 			artifactId project.archivesBaseName
 			version project.version
 
 			from components.java
+
+			artifact sourcesJar {
+				classifier "sources"
+			}
 		}
 	}
 	repositories {
