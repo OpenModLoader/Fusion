@@ -4,7 +4,9 @@ import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
 import javassist.*;
+import javassist.bytecode.AccessFlag;
 import javassist.bytecode.Descriptor;
+import javassist.bytecode.InnerClassesAttribute;
 import me.modmuss50.fusion.MixinManager;
 import me.modmuss50.fusion.api.Ghost;
 import me.modmuss50.fusion.api.Inject;
@@ -182,6 +184,8 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 			}
 			//Removes the target class from the temp classpath
 			cp.removeClassPath(tempCP);
+			//Make everything public to ensure that no possible issues arrise, may not be needed
+			makePublic(target);
 			try {
 				MixinManager.logger.info("Successfully applied " + mixins.size() + " mixins to " + name + " in " + (System.currentTimeMillis() - start) + "ms");
 				MixinManager.transformedClasses.add(name);
@@ -198,11 +202,9 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 	@Override
 	public ClassNode transform(ClassNode input, ITransformerVotingContext context) {
 		//Sadly I think we need this, I know its not great, but it should work without breaking too much
-
 		byte[] bytes = writeClassToBytes(input);
 		System.out.println("Transforming " + input.name);
 		input = readClassFromBytes(transform(input.name.replaceAll("/", "."), bytes));
-
 		return input;
 	}
 
@@ -231,5 +233,28 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 		classNode.accept(writer);
 		return writer.toByteArray();
+	}
+
+	public static CtClass makePublic(CtClass c) {
+		for (CtField field : c.getDeclaredFields()) {
+			field.setModifiers(makePublic(field.getModifiers()));
+		}
+		for (CtBehavior behavior : c.getDeclaredBehaviors()) {
+			behavior.setModifiers(makePublic(behavior.getModifiers()));
+		}
+		InnerClassesAttribute attr = (InnerClassesAttribute) c.getClassFile().getAttribute(InnerClassesAttribute.tag);
+		if (attr != null) {
+			for (int i = 0; i < attr.tableLength(); i++) {
+				attr.setAccessFlags(i, makePublic(attr.accessFlags(i)));
+			}
+		}
+		return c;
+	}
+
+	private static int makePublic(int flags) {
+		if (!AccessFlag.isPublic(flags)) {
+			flags = AccessFlag.setPublic(flags);
+		}
+		return flags;
 	}
 }
