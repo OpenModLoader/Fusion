@@ -1,12 +1,9 @@
 package me.modmuss50.fusion.api;
 
-import net.fabricmc.api.Side;
+import java.util.Map;
 
 public interface IMixinProvider {
 
-	Class[] getMixins(IMixinEnvironment environment);
+	Class[] getMixins(Map<String, String> environmentData);
 
-	interface IMixinEnvironment {
-		Side side();
-	}
 }

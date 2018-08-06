@@ -19,9 +19,9 @@ public class MixinManager {
 	public static List<String> transformedClasses = new ArrayList<>();
 	public static Logger logger = LogManager.getFormatterLogger("FusionMixin");
 
-	public static void findMixins(IMixinProvider.IMixinEnvironment environment) {
+	public static void findMixins(Map<String, String> environmentData) {
 		ServiceLoader<IMixinProvider> serviceLoader = ServiceLoader.load(IMixinProvider.class);
-		ServiceLoaderStreamUtils.forEach(serviceLoader, iMixinProvider -> Arrays.stream(iMixinProvider.getMixins(environment)).forEach(MixinManager::registerMixin));
+		ServiceLoaderStreamUtils.forEach(serviceLoader, iMixinProvider -> Arrays.stream(iMixinProvider.getMixins(environmentData)).forEach(MixinManager::registerMixin));
 	}
 
 	public static void registerMixin(String mixinClass) {
