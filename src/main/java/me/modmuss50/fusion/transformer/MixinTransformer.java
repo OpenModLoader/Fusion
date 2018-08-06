@@ -6,6 +6,7 @@ import cpw.mods.modlauncher.api.TransformerVoteResult;
 import javassist.*;
 import javassist.bytecode.Descriptor;
 import me.modmuss50.fusion.MixinManager;
+import me.modmuss50.fusion.api.Ghost;
 import me.modmuss50.fusion.api.Inject;
 import me.modmuss50.fusion.api.Rewrite;
 import org.apache.commons.lang3.Validate;
@@ -155,6 +156,13 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 						if (field.hasAnnotation(Inject.class)) {
 							CtField generatedField = new CtField(field, target);
 							target.addField(generatedField);
+						}
+						if(field.hasAnnotation(Ghost.class)){
+							Ghost ghost = (Ghost) field.getAnnotation(Ghost.class);
+							if(ghost.stripFinal()){
+								CtField targetField = target.getField(field.getName(), field.getSignature());
+								targetField.getFieldInfo().setAccessFlags(targetField.getModifiers() &~ Modifier.FINAL);
+							}
 						}
 					}
 					//Adds all the interfaces from the mixin class to the target
