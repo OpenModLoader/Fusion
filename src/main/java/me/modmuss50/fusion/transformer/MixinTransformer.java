@@ -1,5 +1,6 @@
 package me.modmuss50.fusion.transformer;
 
+import cpw.mods.modlauncher.VotingContext;
 import cpw.mods.modlauncher.api.ITransformer;
 import cpw.mods.modlauncher.api.ITransformerVotingContext;
 import cpw.mods.modlauncher.api.TransformerVoteResult;
@@ -18,6 +19,7 @@ import org.objectweb.asm.tree.ClassNode;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
 
@@ -35,7 +37,7 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 				MixinManager.logger.trace("Skipping mixin transformer as the transformer has already transformed this class");
 				return basicClass;
 			}
-			//End support
+			MixinManager.transformedClasses.add(name);
 
 			long start = System.currentTimeMillis();
 			//makes a CtClass out of the byte array
@@ -78,6 +80,15 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 									if (methodCandidate.getName().equals(targetName) && methodCandidate.getSignature().equals(method.getSignature())) {
 										targetMethod = methodCandidate;
 										break;
+									}
+								}
+								//Same as above, just without the desc check, might need to change this to force annotation.target() to have the desc as well
+								if(targetMethod == null && !annotation.target().isEmpty()){
+									for (CtMethod methodCandidate : target.getMethods()) {
+										if (methodCandidate.getName().equals(targetName)) {
+											targetMethod = methodCandidate;
+											break;
+										}
 									}
 								}
 							} else {
@@ -188,7 +199,6 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 			makePublic(target);
 			try {
 				MixinManager.logger.info("Successfully applied " + mixins.size() + " mixins to " + name + " in " + (System.currentTimeMillis() - start) + "ms");
-				MixinManager.transformedClasses.add(name);
 				return target.toBytecode();
 			} catch (IOException | CannotCompileException e) {
 				throw new RuntimeException(e);
@@ -211,6 +221,19 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 	@Nonnull
 	@Override
 	public TransformerVoteResult castVote(ITransformerVotingContext context) {
+		if(context instanceof VotingContext){
+			try {
+				//CPW pls
+				Field classNameField = VotingContext.class.getDeclaredField("className");
+				classNameField.setAccessible(true);
+				String name = (String) classNameField.get(context);
+				if(MixinManager.transformedClasses.contains(name)){
+					return TransformerVoteResult.REJECT;
+				}
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}
 		return TransformerVoteResult.YES;
 	}
 
