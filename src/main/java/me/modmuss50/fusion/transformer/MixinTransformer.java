@@ -12,7 +12,9 @@ import me.modmuss50.fusion.MixinManager;
 import me.modmuss50.fusion.api.Ghost;
 import me.modmuss50.fusion.api.Inject;
 import me.modmuss50.fusion.api.Rewrite;
+import me.modmuss50.fusion.api.TargetMap;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.tuple.Pair;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -21,6 +23,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -87,6 +90,16 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 									for (CtMethod methodCandidate : target.getMethods()) {
 										String candiateSig = methodCandidate.getName() + methodCandidate.getSignature();
 										if(candiateSig.equals(annotation.target())){
+											targetMethod = methodCandidate;
+											break;
+										}
+									}
+								}
+
+								Optional<Pair<String, String>> targetMap = getTargetMap(method);
+								if(targetMap.isPresent()){
+									for (CtMethod methodCandidate : target.getMethods()) {
+										if (methodCandidate.getName().equals(targetMap.get().getLeft()) && methodCandidate.getSignature().equals(targetMap.get().getRight())) {
 											targetMethod = methodCandidate;
 											break;
 										}
@@ -207,6 +220,24 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 		}
 
 		return basicClass;
+	}
+
+	//Name, desc
+	private Optional<Pair<String, String>> getTargetMap(CtMethod method){
+		if(method.hasAnnotation(TargetMap.class)){
+			try {
+				TargetMap map = (TargetMap) method.getAnnotation(TargetMap.class);
+				if(!map.value().isEmpty()){
+					String value = map.value();
+					String name = value.substring(0, value.indexOf("("));
+					String desc = value.substring(value.lastIndexOf("("));
+					return Optional.of(Pair.of(name, desc));
+				}
+			} catch (ClassNotFoundException e) {
+				return Optional.empty();
+			}
+		}
+		return Optional.empty();
 	}
 
 	@Nonnull
