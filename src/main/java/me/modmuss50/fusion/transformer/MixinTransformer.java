@@ -76,16 +76,17 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 							String targetName = annotation.target().isEmpty() ? method.getName() : annotation.target();
 							boolean isConstructor = targetName.equals("<init>");
 							if (!isConstructor) {
-								for (CtMethod methodCandidate : target.getMethods()) {
-									if (methodCandidate.getName().equals(targetName) && methodCandidate.getSignature().equals(method.getSignature())) {
-										targetMethod = methodCandidate;
-										break;
-									}
-								}
-								//Same as above, just without the desc check, might need to change this to force annotation.target() to have the desc as well
-								if(targetMethod == null && !annotation.target().isEmpty()){
+								if(annotation.target().isEmpty()){
 									for (CtMethod methodCandidate : target.getMethods()) {
-										if (methodCandidate.getName().equals(targetName)) {
+										if (methodCandidate.getName().equals(method.getName()) && methodCandidate.getSignature().equals(method.getSignature())) {
+											targetMethod = methodCandidate;
+											break;
+										}
+									}
+								} else {
+									for (CtMethod methodCandidate : target.getMethods()) {
+										String candiateSig = methodCandidate.getName() + methodCandidate.getSignature();
+										if(candiateSig.equals(annotation.target())){
 											targetMethod = methodCandidate;
 											break;
 										}
@@ -213,7 +214,6 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 	public ClassNode transform(ClassNode input, ITransformerVotingContext context) {
 		//Sadly I think we need this, I know its not great, but it should work without breaking too much
 		byte[] bytes = writeClassToBytes(input);
-		System.out.println("Transforming " + input.name);
 		input = readClassFromBytes(transform(input.name.replaceAll("/", "."), bytes));
 		return input;
 	}
