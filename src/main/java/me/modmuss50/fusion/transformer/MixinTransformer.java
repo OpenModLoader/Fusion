@@ -178,8 +178,7 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 							target.addMethod(generatedMethod);
 						}
 					}
-					for (CtField field : mixinClass.getFields()) {
-						//Copy's the field over
+					for (CtField field : mixinClass.getDeclaredFields()) {
 						if (field.hasAnnotation(Inject.class)) {
 							CtField generatedField = new CtField(field, target);
 							target.addField(generatedField);
