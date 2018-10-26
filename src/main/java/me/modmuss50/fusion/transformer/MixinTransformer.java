@@ -70,6 +70,10 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 				try {
 					for (CtMethod method : mixinClass.getMethods()) {
 						if (method.hasAnnotation(Rewrite.class)) {
+							if(!(method.getAnnotation(Rewrite.class) instanceof Rewrite)){
+								MixinManager.logger.error("Annotation %s is not an instance of Rewrite", method.getAnnotation(Rewrite.class).getClass());
+								continue;
+							}
 							Rewrite annotation = (Rewrite) method.getAnnotation(Rewrite.class);
 							//Copy's the mixin method to a new method targeting the target
 							//This also renames the methord to contain the classname of the mixin
@@ -159,6 +163,10 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 							}
 
 						} else if (method.hasAnnotation(Inject.class)) {
+							if(!(method.getAnnotation(Inject.class) instanceof Inject)){
+								MixinManager.logger.error("Annotation %s is not an instance of Inject", method.getAnnotation(Inject.class).getClass());
+								continue;
+							}
 							//Just copys and adds the method stright into the target class
 							String methodName = method.getName();
 							Inject inject = (Inject) method.getAnnotation(Inject.class);
@@ -185,6 +193,10 @@ public class MixinTransformer implements ITransformer<ClassNode> {
 						}
 						if(field.hasAnnotation(Ghost.class)){
 							Ghost ghost = (Ghost) field.getAnnotation(Ghost.class);
+							if(!(field.getAnnotation(Ghost.class) instanceof Ghost)){
+								MixinManager.logger.error("Annotation %s is not an instance of Ghost", field.getAnnotation(Ghost.class).getClass());
+								continue;
+							}
 							if(ghost.stripFinal()){
 								CtField targetField = target.getField(field.getName(), field.getSignature());
 								targetField.getFieldInfo().setAccessFlags(targetField.getModifiers() &~ Modifier.FINAL);
